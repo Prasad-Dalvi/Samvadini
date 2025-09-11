@@ -1,5 +1,5 @@
 1. cd MergePD
-2. git clone https://github.com/Prasad-Dalvi/Samvadini-ASEP2_2024-25.git
+2. git clone https://github.com/Prasad-Dalvi/Samvadini.git
 3. python -m venv venv
 4. ./venv/Scripts/activate
 5. pip install sentencepiece-0.2.0-cp312-cp312-win_amd64.whl
