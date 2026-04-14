@@ -166,6 +166,7 @@ section h2 {
     background-color: #0056b3;
 }
 
+
 .dark-mode #home a {
     background-color: #60a5fa;
 }
@@ -323,4 +324,32 @@ footer {
         height: 35px;
         font-size: 1rem;
     }
+}
+/* ── New Feature Styles ──────────────────────────────────────────────────── */
+
+/* Phrase library chip hover */
+#phraseLibrary button:active {
+  transform: scale(0.94);
+}
+
+/* Conversation history scrollbar */
+#conversationHistory::-webkit-scrollbar { width: 4px; }
+#conversationHistory::-webkit-scrollbar-thumb {
+  background: #cbd5e1; border-radius: 4px;
+}
+
+/* Quick-speak textarea */
+#quickSpeakText:focus {
+  border-color: #0d9488;
+  box-shadow: 0 0 0 3px rgba(13,148,136,.15);
+}
+
+/* Speed radio labels */
+input[type="radio"][name="speakSpeed"] { accent-color: #0d9488; }
+
+/* Health banner dark mode */
+body.dark-mode #healthBanner {
+  background: #052e16;
+  border-color: #166534;
+  color: #86efac;
 }

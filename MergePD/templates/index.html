@@ -1,116 +1,352 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Samvadini</title>
+  <title>Samvadini — Speak in Every Language</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="static/style.css"/>
-  <script src="static/script.js" defer></script>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🤟</text></svg>"/>
+  <!-- Suppress MediaPipe internal WebGL/WASM noise before it loads -->
+  <script>
+    (function() {
+      const _warn  = console.warn.bind(console);
+      const _error = console.error.bind(console);
+      const _info  = console.info.bind(console);
+      const suppress = /gl_context|WebGL|OpenGL|wasm|hands_solution|mediapipe|locateFile|simd/i;
+      console.warn  = (...a) => { if (!suppress.test(String(a))) _warn(...a);  };
+      console.error = (...a) => { if (!suppress.test(String(a))) _error(...a); };
+      console.info  = (...a) => { if (!suppress.test(String(a))) _info(...a);  };
+    })();
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1632717462/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1646424915/hands.js" crossorigin="anonymous"></script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+  <style>
+    #gesturePanel {
+      position: fixed; bottom: 1.5rem; right: 1.5rem;
+      z-index: 50; display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem;
+    }
+    #gestureVideo {
+      width: 180px; height: 135px; border-radius: 12px;
+      border: 3px solid #3b82f6; object-fit: cover; background: #000; transform: scaleX(-1);
+    }
+    #gestureCanvas {
+      position: absolute; bottom: 56px; right: 0;
+      width: 180px; height: 135px; border-radius: 12px;
+      transform: scaleX(-1); pointer-events: none;
+    }
+    #gestureBadge {
+      background: rgba(37,99,235,0.95); color: white;
+      padding: 0.3rem 0.75rem; border-radius: 999px;
+      font-size: 0.8rem; font-weight: 600;
+      min-width: 180px; text-align: center; transition: all 0.3s ease;
+    }
+    #gestureBadge.active { background: rgba(5,150,105,0.95); animation: gpulse 0.6s ease-in-out; }
+    @keyframes gpulse { 0%{transform:scale(1)} 50%{transform:scale(1.06)} 100%{transform:scale(1)} }
+    .gesture-toggle {
+      background: #3b82f6; color: white; border: none;
+      border-radius: 999px; padding: 0.4rem 1rem; font-size: 0.8rem;
+      cursor: pointer; width: 180px;
+    }
+    .gesture-toggle:hover { background: #2563eb; }
+
+    #summaryPanel {
+      display: none; margin-top: 1rem; padding: 1rem;
+      background: #f0f9ff; border-radius: 10px; border-left: 4px solid #3b82f6;
+    }
+    .sentiment-badge {
+      display: inline-block; padding: 0.2rem 0.7rem;
+      border-radius: 999px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase;
+    }
+    .sentiment-positive { background: #d1fae5; color: #065f46; }
+    .sentiment-negative { background: #fee2e2; color: #991b1b; }
+    .sentiment-neutral  { background: #e5e7eb; color: #374151; }
+    .sentiment-urgent   { background: #fef3c7; color: #92400e; }
+
+    .glowing { animation: glow 0.8s ease-in-out infinite alternate; }
+    @keyframes glow { from{box-shadow:0 0 4px #60a5fa} to{box-shadow:0 0 16px #2563eb} }
+
+    #cheatsheet {
+      position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+      background: white; border-radius: 16px; padding: 2rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3); z-index: 100;
+      display: none; max-width: 400px; width: 90%;
+    }
+    #cheatsheet.show { display: block; }
+    #overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+      z-index: 99; display: none;
+    }
+    #overlay.show { display: block; }
+    .dark-mode #cheatsheet { background: #1f2937; color: #e5e7eb; }
+    .dark-mode #summaryPanel { background: #1e3a5f; }
+  </style>
 </head>
 <body class="bg-gray-100 font-sans">
 
-  <!-- Header -->
-  <header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-6 shadow-lg">
-    <nav class="container mx-auto flex justify-between items-center px-4">
-      <h1 class="text-3xl font-bold">Samvadini</h1>
-      <div class="flex gap-6 items-center">
-        <a href="#home" class="hover:text-blue-200">Home</a>
-        <a href="#tools" class="hover:text-blue-200">Tools</a>
-        <button id="themeToggle" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-          <span id="themeIcon">🌙</span> Mode
+<!-- Header -->
+<header class="bg-gradient-to-r from-blue-600 to-blue-800 text-white py-5 shadow-lg">
+  <nav class="container mx-auto flex justify-between items-center px-4 flex-wrap gap-3">
+    <div>
+      <h1 class="text-3xl font-bold">🤲 Samvadini</h1>
+      <p class="text-blue-200 text-sm">Bridging communication for everyone</p>
+    </div>
+    <div class="flex gap-3 items-center flex-wrap">
+      <a href="#tools" class="hover:text-blue-200 text-sm">Tools</a>
+      <button onclick="showCheatsheet()" class="bg-blue-500 hover:bg-blue-700 text-white text-sm py-1.5 px-3 rounded-full">✋ Gesture Guide</button>
+      <button id="themeToggle" class="bg-blue-500 hover:bg-blue-700 text-white py-1.5 px-3 rounded-full text-sm">
+        <span id="themeIcon">🌙</span> Mode
+      </button>
+    </div>
+  </nav>
+</header>
+
+<!-- Hero -->
+<div class="bg-gradient-to-br from-blue-50 to-indigo-50 py-8 text-center px-4">
+  <p class="text-gray-600 text-lg max-w-2xl mx-auto">
+    Talk. Sign. Translate. Feel heard — in <strong>any language</strong>, for <strong>everyone</strong>.
+    Now with <span class="text-blue-600 font-bold">✋ Air Gesture Control</span>.
+  </p>
+</div>
+
+<!-- Main Tools -->
+<!-- Health Status Banner -->
+<div id="healthBanner"
+     style="display:none;padding:10px 16px;text-align:center;font-size:13px;">
+</div>
+
+<!-- API Key Warning Banner -->
+<div id="apiKeyWarning"
+     style="display:none;background:#fefce8;border-bottom:2px solid #fbbf24;
+            padding:10px 20px;text-align:center;font-size:13px;color:#92400e;">
+  ⚠️ <strong>Groq API key not set</strong> — AI Assistant will show a fallback message.
+  Get a free key at <a href="https://console.groq.com" target="_blank"
+  style="color:#b45309;font-weight:bold;text-decoration:underline;">console.groq.com</a>
+  → paste it in your <code style="background:#fef3c7;padding:1px 5px;border-radius:4px;">.env</code> file as
+  <code style="background:#fef3c7;padding:1px 5px;border-radius:4px;">GROQ_API_KEY=your_key</code>
+  then restart the server.
+</div>
+
+<section id="tools" class="py-10 bg-gray-100">
+  <div class="container mx-auto space-y-8 px-4">
+
+    <!-- Universal Input -->
+    <div class="bg-white p-6 rounded-2xl shadow-lg">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-xl font-bold text-gray-800">✍️ Universal Input</h2>
+        <button onclick="smartSummarize()" class="text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full hover:bg-indigo-200 font-medium">✨ AI Analyze</button>
+      </div>
+      <div class="flex items-center border-2 border-blue-200 rounded-2xl px-4 py-3 bg-gray-50 shadow-inner gap-2">
+        <input type="text" id="universalInput"
+               placeholder="Type, speak, or use a hand gesture…"
+               class="flex-grow text-base text-gray-800 bg-transparent outline-none"/>
+        <button id="universalMic" class="text-2xl text-blue-600 hover:text-blue-800 transition" title="Speak in Marathi">🎤</button>
+        <select id="targetLang" class="ml-2 p-1.5 border border-blue-300 rounded-lg text-gray-800 text-sm">
+          <option value="mr">Marathi</option>
+          <option value="hi">Hindi</option>
+          <option value="en">English</option>
+          <option value="kn">Kannada</option>
+          <option value="ta">Tamil</option>
+          <option value="te">Telugu</option>
+          <option value="gu">Gujarati</option>
+          <option value="bn">Bengali</option>
+        </select>
+      </div>
+      <!-- Smart Summary Output -->
+      <div id="summaryPanel">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="font-semibold text-sm text-gray-700">AI Analysis:</span>
+          <span id="summarysentiment" class="sentiment-badge sentiment-neutral">neutral</span>
+        </div>
+        <p class="text-sm text-gray-600 mb-1"><strong>Simplified:</strong> <span id="summarySimplified"></span></p>
+        <p class="text-sm text-gray-600 mb-1"><strong>Key Points:</strong> <span id="summaryPoints"></span></p>
+        <p class="text-sm text-gray-600"><strong>ISL Words:</strong> <span id="summaryISL" class="font-mono text-blue-700"></span></p>
+      </div>
+    </div>
+
+    <!-- 3-column action cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+      <!-- AI Assistant -->
+      <div class="bg-white p-6 rounded-2xl shadow-lg flex flex-col gap-3">
+        <h3 class="font-bold text-gray-800 text-lg">🤖 AI Assistant</h3>
+        <div class="flex items-center border-2 border-blue-200 rounded-xl px-3 py-2 bg-gray-50 gap-2">
+          <input type="text" id="assistantInput" placeholder="Ask anything…"
+                 class="flex-grow text-sm text-gray-800 bg-transparent outline-none"/>
+          <button id="assistantMic" class="text-xl text-blue-600 hover:text-blue-800" title="Speak">🎤</button>
+        </div>
+        <button id="askAssistantButton"
+                class="bg-blue-600 text-white font-bold py-2.5 px-4 rounded-xl hover:bg-blue-700 transition w-full">
+          Ask ▶
+        </button>
+        <p id="assistantResponse" class="text-gray-600 text-sm bg-gray-50 p-2 rounded-lg min-h-[40px]">Say something…</p>
+        <audio id="assistantAudio" class="w-full hidden mt-1" controls></audio>
+      </div>
+
+      <!-- Emotion Audio -->
+      <div class="bg-white p-6 rounded-2xl shadow-lg flex flex-col gap-3">
+        <h3 class="font-bold text-gray-800 text-lg">🎭 Emotion to Audio</h3>
+        <p class="text-gray-500 text-xs">Detects your emotion and speaks with matching tone.</p>
+        <button id="convertEmotionButton"
+                class="bg-purple-600 text-white font-bold py-2.5 px-4 rounded-xl hover:bg-purple-700 transition w-full">
+          Convert to Audio ▶
+        </button>
+        <div id="emotionResults" class="text-gray-600 text-sm">Emotions: <span class="font-mono text-purple-700"></span></div>
+        <div id="speechParams"   class="text-gray-500 text-xs">Params: <span></span></div>
+        <audio id="emotionAudio" controls class="w-full mt-1 hidden"></audio>
+      </div>
+
+      <!-- Translate & Speak -->
+      <div class="bg-white p-6 rounded-2xl shadow-lg flex flex-col gap-3">
+        <h3 class="font-bold text-gray-800 text-lg">🌐 Translate & Speak</h3>
+        <p class="text-gray-500 text-xs">Translates your text to the selected language & reads it aloud.</p>
+        <button id="translateSpeakButton"
+                class="bg-green-600 text-white font-bold py-2.5 px-4 rounded-xl hover:bg-green-700 transition w-full">
+          Translate & Speak ▶
+        </button>
+        <p id="translateResult" class="text-gray-600 text-sm bg-gray-50 p-2 rounded-lg min-h-[40px]">Translated text: <span></span></p>
+        <audio id="translateAudio" controls class="w-full mt-1 hidden"></audio>
+      </div>
+    </div>
+
+    <!-- ── NEW: ISL Quick Phrase Library ─────────────────────────────── -->
+    <div class="bg-white p-6 rounded-2xl shadow-lg">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-xl font-bold text-gray-800">📋 ISL Phrase Library</h2>
+        <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">Tap a phrase → instant ISL</span>
+      </div>
+      <div id="phraseLibrary" class="space-y-3">
+        <p class="text-gray-400 text-sm text-center">Loading phrases…</p>
+      </div>
+    </div>
+
+    <!-- ── NEW: Conversation History ──────────────────────────────────── -->
+    <div class="bg-white p-6 rounded-2xl shadow-lg">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-xl font-bold text-gray-800">🗂️ Conversation History</h2>
+        <button onclick="clearHistory()"
+                class="text-xs bg-red-100 text-red-600 px-3 py-1 rounded-full hover:bg-red-200 font-medium">
+          🗑 Clear
         </button>
       </div>
-    </nav>
-  </header>
-
-  <!-- Tools Section -->
-  <section id="tools" class="py-12 bg-gray-100">
-    <div class="container mx-auto space-y-10 px-4">
-
-      <!-- Universal Text Input -->
-      <div class="bg-white p-6 rounded-lg shadow-lg">
-        <h2 class="text-xl font-bold text-gray-800 mb-4">Universal Text Input</h2>
-        <div class="flex items-center border rounded-full px-4 py-2 bg-gray-50 shadow-inner">
-          <input type="text" id="universalInput" placeholder="Search or speak..." 
-                 class="flex-grow text-base text-gray-800 bg-transparent outline-none px-2"/>
-          <button id="universalMic" class="text-xl text-blue-600 hover:text-blue-800" title="Speak">🎤</button>
-          <select id="targetLang" class="ml-4 p-2 border rounded-lg text-gray-800">
-            <option value="mr">Marathi</option>
-            <option value="hi">Hindi</option>
-            <option value="en">English</option>
-            <option value="kn">Kannada</option>
-          </select>
-        </div>
+      <div id="conversationHistory"
+           class="space-y-2 max-h-56 overflow-y-auto pr-1 text-sm text-gray-700">
+        <p class="text-gray-400 italic text-center">No messages yet — ask the AI something!</p>
       </div>
-
-
-      <!-- Button Actions Row -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-         
-         <!-- AI Voice Assistant -->
-      <div class="bg-white p-6 rounded-lg shadow-lg w-full ">
-        
-        <div class="flex items-center border rounded-full px-4 py-2 bg-gray-50 shadow-inner">
-          <input type="text" id="assistantInput" placeholder="Ask your assistant..." 
-                 onkeypress="handleAssistantKeyPress(event)"
-                 class="flex-grow text-base text-gray-800 bg-transparent outline-none px-2"/>
-          <button id="assistantMic" onclick="startSpeechRecognition('assistant')" 
-                  class="text-xl text-blue-600 hover:text-blue-800" title="Speak">🎤</button>
-        </div>
-        <button onclick="askAssistant()" class="mt-4 bg-blue-600 text-white font-bold py-2 px-4 rounded-full hover:bg-blue-700 self-start">Speak</button>
-        <p id="assistantResponse" class="text-gray-600 mt-2 text-sm">Say something...</p>
-        <audio id="assistantAudio" class="w-full hidden mt-2" controls></audio>
-        <label class="text-sm text-gray-600 mt-2 block">AI Audio Speed:
-          <input type="range" min="0.5" max="2" step="0.1" value="1" 
-                 onchange="document.getElementById('assistantAudio').playbackRate = this.value">
-        </label>
-      </div>
-        
-        <!-- Emotion to Audio -->
-        <div class="bg-white p-6 rounded-lg shadow-md">
-          <button onclick="convertEmotionAudio()" 
-                  class="bg-blue-600 text-white py-3 px-6 rounded-full hover:bg-blue-700 transition text-lg w-full">Convert to Audio</button>
-          <div id="emotionResults" class="text-gray-600 text-lg mt-4">Detected Emotions: <span></span></div>
-          <div id="speechParams" class="text-gray-600 text-lg mt-1">Speech Parameters: <span></span></div>
-          <audio id="emotionAudio" controls class="w-full mt-3 hidden"></audio>
-          <label class="text-sm text-gray-600 mt-2 block">AI Audio Speed:
-            <input type="range" min="0.5" max="2" step="0.1" value="1" 
-                   onchange="document.getElementById('emotionAudio').playbackRate = this.value">
-          </label>
-        </div>
-
-        <!-- Translate & Speak -->
-        <div class="bg-white p-6 rounded-lg shadow-md">
-          <button onclick="translateSpeak()" 
-                  class="bg-blue-600 text-white py-3 px-6 rounded-full hover:bg-blue-700 transition text-lg w-full">Translate & Speak</button>
-          <p id="translateResult" class="text-gray-600 text-lg mt-4">Translated Text: <span></span></p>
-          <audio id="translateAudio" controls class="w-full mt-3 hidden"></audio>
-          <label class="text-sm text-gray-600 mt-2 block">Translated Audio Speed:
-            <input type="range" min="0.5" max="2" step="0.1" value="1" 
-                   onchange="document.getElementById('translateAudio').playbackRate = this.value">
-          </label>
-        </div>
-
-      </div>
-
-      <!-- ISL Converter -->
-      <div class="bg-white p-6 rounded-lg shadow-lg">
-        <h2 class="text-xl font-bold text-gray-800 mb-4">Text to ISL Converter</h2>
-        <button onclick="convertToSign()" 
-                class="bg-blue-600 text-white font-bold py-3 px-6 rounded-full hover:bg-blue-700 w-full mb-4">Convert to ISL</button>
-        <p class="text-gray-600 mb-4">Please Note: Use text like "Stay home stay safe" to see the converter in action.</p>
-        <div id="islOutput" class="video-output-container"></div>
-      </div>
-
     </div>
-  </section>
 
-  <!-- Footer -->
-  <footer class="bg-gray-800 text-white text-center py-6">
-    <p>© 2025 Samvadini | Designed for People with Disabilities</p>
-    <p class="mt-2">Created by First Year AI & DS Students</p>
-  </footer>
+    <!-- ── NEW: Quick Speak with Speed Control ────────────────────────── -->
+    <div class="bg-white p-6 rounded-2xl shadow-lg">
+      <h2 class="text-xl font-bold text-gray-800 mb-3">🔊 Quick Speak</h2>
+      <p class="text-gray-500 text-xs mb-3">Type any text, pick a speed, and hear it instantly — no emotion analysis needed.</p>
+      <textarea id="quickSpeakText" rows="2"
+                placeholder="Type something to speak…"
+                class="w-full border-2 border-blue-200 rounded-xl px-4 py-2 text-sm text-gray-800 bg-gray-50 outline-none resize-none mb-3"></textarea>
+      <div class="flex items-center gap-3 mb-3 flex-wrap">
+        <span class="text-sm font-medium text-gray-600">Speed:</span>
+        <label class="flex items-center gap-1 text-sm cursor-pointer">
+          <input type="radio" name="speakSpeed" value="slow"> 🐢 Slow
+        </label>
+        <label class="flex items-center gap-1 text-sm cursor-pointer">
+          <input type="radio" name="speakSpeed" value="normal" checked> 🚶 Normal
+        </label>
+        <label class="flex items-center gap-1 text-sm cursor-pointer">
+          <input type="radio" name="speakSpeed" value="fast"> 🐇 Fast
+        </label>
+        <select id="quickSpeakLang" class="ml-auto p-1.5 border border-blue-300 rounded-lg text-gray-800 text-sm">
+          <option value="en">English</option>
+          <option value="mr">Marathi</option>
+          <option value="hi">Hindi</option>
+          <option value="ta">Tamil</option>
+          <option value="te">Telugu</option>
+          <option value="kn">Kannada</option>
+          <option value="gu">Gujarati</option>
+          <option value="bn">Bengali</option>
+        </select>
+      </div>
+      <button onclick="quickSpeak()"
+              class="bg-teal-600 text-white font-bold py-2.5 px-4 rounded-xl hover:bg-teal-700 transition w-full mb-2">
+        🔊 Speak Now ▶
+      </button>
+      <audio id="quickSpeakAudio" controls class="w-full mt-1 hidden"></audio>
+    </div>
 
+    <!-- ISL Converter -->
+    <div class="bg-white p-6 rounded-2xl shadow-lg">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-xl font-bold text-gray-800">🤟 Text → Indian Sign Language</h2>
+        <span class="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded-full">✋ gesture: thumbs up</span>
+      </div>
+      <button id="convertToSignButton"
+              class="bg-blue-600 text-white font-bold py-3 px-6 rounded-xl hover:bg-blue-700 w-full mb-3 text-lg">
+        Convert to ISL ▶
+      </button>
+      <p class="text-gray-500 text-xs mb-3">Try: "Stay home stay safe" — or wave 👍 to convert instantly!</p>
+      <div id="islOutput" class="min-h-[80px] flex items-center justify-center text-gray-400 text-sm"></div>
+    </div>
+
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="bg-gray-800 text-white text-center py-6 mt-4">
+  <p>© 2025 Samvadini | Accessibility for All</p>
+  <p class="mt-1 text-gray-400 text-sm">Made with ❤️ by First Year AI & DS Students</p>
+</footer>
+
+<!-- Air Gesture Panel -->
+<div id="gesturePanel">
+  <button class="gesture-toggle" id="gesturePanelToggle" onclick="toggleGesturePanel()">✋ Enable Gesture Control</button>
+  <div id="gestureVideoWrapper" style="display:none; position:relative;">
+    <video id="gestureVideo" autoplay playsinline></video>
+    <canvas id="gestureCanvas"></canvas>
+  </div>
+  <div id="gestureBadge" style="display:none;">👋 Waiting for gesture…</div>
+</div>
+
+<!-- Gesture Cheatsheet Modal -->
+<div id="overlay" onclick="hideCheatsheet()"></div>
+<div id="cheatsheet">
+  <div class="flex justify-between items-center mb-4">
+    <h2 class="text-xl font-bold">✋ Air Gesture Guide</h2>
+    <button onclick="hideCheatsheet()" style="font-size:1.5rem;background:none;border:none;cursor:pointer;color:#9ca3af;">×</button>
+  </div>
+  <div class="grid grid-cols-2 gap-3">
+    <div style="background:#eff6ff;padding:12px;border-radius:12px;text-align:center;">
+      <div style="font-size:2rem;margin-bottom:4px;">👍</div>
+      <div style="font-weight:600;font-size:14px;">Thumbs Up</div>
+      <div style="font-size:12px;color:#6b7280;">Convert to ISL</div>
+    </div>
+    <div style="background:#fef2f2;padding:12px;border-radius:12px;text-align:center;">
+      <div style="font-size:2rem;margin-bottom:4px;">👎</div>
+      <div style="font-weight:600;font-size:14px;">Thumbs Down</div>
+      <div style="font-size:12px;color:#6b7280;">Clear Inputs</div>
+    </div>
+    <div style="background:#f0fdf4;padding:12px;border-radius:12px;text-align:center;">
+      <div style="font-size:2rem;margin-bottom:4px;">✋</div>
+      <div style="font-weight:600;font-size:14px;">Open Palm</div>
+      <div style="font-size:12px;color:#6b7280;">Translate & Speak</div>
+    </div>
+    <div style="background:#fefce8;padding:12px;border-radius:12px;text-align:center;">
+      <div style="font-size:2rem;margin-bottom:4px;">☝️</div>
+      <div style="font-weight:600;font-size:14px;">Point Up</div>
+      <div style="font-size:12px;color:#6b7280;">Ask AI Assistant</div>
+    </div>
+    <div style="background:#faf5ff;padding:12px;border-radius:12px;text-align:center;">
+      <div style="font-size:2rem;margin-bottom:4px;">✊</div>
+      <div style="font-weight:600;font-size:14px;">Fist</div>
+      <div style="font-size:12px;color:#6b7280;">Emotion Audio</div>
+    </div>
+    <div style="background:#fdf2f8;padding:12px;border-radius:12px;text-align:center;">
+      <div style="font-size:2rem;margin-bottom:4px;">✌️</div>
+      <div style="font-weight:600;font-size:14px;">Peace Sign</div>
+      <div style="font-size:12px;color:#6b7280;">Toggle Microphone</div>
+    </div>
+  </div>
+  <p style="font-size:12px;color:#9ca3af;margin-top:16px;text-align:center;">Hold any gesture for ~1 second to activate</p>
+</div>
+
+<!-- Load script LAST, no defer, so all functions are available immediately -->
+<script src="{{ url_for('static', filename='script.js') }}"></script>
 </body>
 </html>
