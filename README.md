@@ -1,4 +1,4 @@
-Project Video v2 Link- [https://youtu.be/lNojLJDH3_s?si=BwZkP7DFOXGYUHD8](https://youtu.be/k6U9cGeSQqc?si=eBYP7n8Uh4O1-w80)
+Project Video v2 Link- [[https://youtu.be/lNojLJDH3_s?si=BwZkP7DFOXGYUHD8](https://youtu.be/k6U9cGeSQqc?si=eBYP7n8Uh4O1-w80)](https://youtu.be/k6U9cGeSQqc?si=B3HDToe1BAxZejOA&t=232)
 1. cd MergePD
 2. git clone https://github.com/Prasad-Dalvi/Samvadini.git
 3. python -m venv venv
