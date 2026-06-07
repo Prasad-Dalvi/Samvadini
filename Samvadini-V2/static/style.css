@@ -1,0 +1,355 @@
+/* Reset and Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    line-height: 1.6;
+    background-color: #f5f7fa;
+    color: #333;
+}
+
+/* Dark Mode */
+.dark-mode {
+    background-color: #1a202c;
+    color: #e2e8f0;
+}
+
+.dark-mode header {
+    background-color: #2d3748;
+}
+
+.dark-mode section {
+    background-color: #1a202c;
+}
+
+.dark-mode .tool {
+    background-color: #2d3748;
+}
+
+.dark-mode h2, .dark-mode h3 {
+    color: #e2e8f0;
+}
+
+.dark-mode p {
+    color: #b0c4de;
+}
+
+/* Header */
+header {
+    background-color: #fff;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+header h1 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+nav {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+nav a, nav button {
+    text-decoration: none;
+    color: #007bff;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+}
+
+.dark-mode nav a, .dark-mode nav button {
+    color: #60a5fa;
+}
+
+/* Button Styles */
+button {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    border: none;
+    border-radius: 25px;
+    background-color: #007bff;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+button:focus {
+    outline: 2px solid #003087;
+    outline-offset: 2px;
+}
+
+.dark-mode button {
+    background-color: #60a5fa;
+}
+
+.dark-mode button:hover {
+    background-color: #3b82f6;
+}
+
+/* Microphone Buttons */
+.mic-button {
+    padding: 0;
+    width: 40px;
+    height: 40px;
+    font-size: 1.25rem;
+    background-color: #007bff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mic-button:hover {
+    background-color: #0056b3;
+}
+
+.dark-mode .mic-button {
+    background-color: #60a5fa;
+}
+
+.dark-mode .mic-button:hover {
+    background-color: #3b82f6;
+}
+
+/* Sections */
+section {
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+section h2 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+    text-align: center;
+    color: #333;
+}
+
+/* Home Section */
+#home {
+    text-align: center;
+}
+
+#home h2 {
+    font-size: 2.5rem;
+}
+
+#home p {
+    font-size: 1.25rem;
+    margin-bottom: 1.5rem;
+    color: #666;
+}
+
+#home a {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background-color: #007bff;
+    color: #fff;
+    text-decoration: none;
+    border-radius: 25px;
+    transition: background-color 0.3s;
+}
+
+#home a:hover {
+    background-color: #0056b3;
+}
+
+
+.dark-mode #home a {
+    background-color: #60a5fa;
+}
+
+.dark-mode #home a:hover {
+    background-color: #3b82f6;
+}
+
+/* Mission Section */
+#mission {
+    text-align: center;
+}
+
+#mission p {
+    font-size: 1.1rem;
+    color: #666;
+}
+
+/* Tools Section */
+.tools-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.tool {
+    background-color: #fff;
+    padding: 1.5rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.tool.full-width {
+    grid-column: span 2;
+}
+
+.tool h3 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.tool p {
+    color: #666;
+    margin: 0.5rem 0;
+}
+
+.input-container {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #d1d5db;
+    border-radius: 5px;
+    font-size: 1rem;
+    resize: vertical;
+}
+
+textarea:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+.dark-mode textarea {
+    background-color: #2d3748;
+    border-color: #4b5563;
+    color: #e2e8f0;
+}
+
+select {
+    padding: 0.5rem;
+    border: 1px solid #007bff;
+    border-radius: 5px;
+    font-size: 1rem;
+    background-color: #fff;
+    color: #333;
+}
+
+.dark-mode select {
+    background-color: #2d3748;
+    border-color: #60a5fa;
+    color: #e2e8f0;
+}
+
+
+/* ISL Output */
+#islOutput {
+    margin-top: 1rem;
+}
+
+.word-title {
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+    text-align: center;
+    color: #333;
+}
+
+.dark-mode .word-title {
+    color: #e2e8f0;
+}
+
+.letter-container {
+    display: flex;
+    justify-content: center;
+}
+
+.letter-container video {
+    max-width: 100%;
+    height: auto;
+    border-radius: 5px;
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 1rem;
+    background-color: #fff;
+    color: #666;
+    box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.dark-mode footer {
+    background-color: #2d3748;
+    color: #b0c4de;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .tools-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .tool.full-width {
+        grid-column: span 1;
+    }
+
+    .input-container {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    button, .mic-button {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+
+    .mic-button {
+        width: 35px;
+        height: 35px;
+        font-size: 1rem;
+    }
+}
+/* ── New Feature Styles ──────────────────────────────────────────────────── */
+
+/* Phrase library chip hover */
+#phraseLibrary button:active {
+  transform: scale(0.94);
+}
+
+/* Conversation history scrollbar */
+#conversationHistory::-webkit-scrollbar { width: 4px; }
+#conversationHistory::-webkit-scrollbar-thumb {
+  background: #cbd5e1; border-radius: 4px;
+}
+
+/* Quick-speak textarea */
+#quickSpeakText:focus {
+  border-color: #0d9488;
+  box-shadow: 0 0 0 3px rgba(13,148,136,.15);
+}
+
+/* Speed radio labels */
+input[type="radio"][name="speakSpeed"] { accent-color: #0d9488; }
+
+/* Health banner dark mode */
+body.dark-mode #healthBanner {
+  background: #052e16;
+  border-color: #166534;
+  color: #86efac;
+}
