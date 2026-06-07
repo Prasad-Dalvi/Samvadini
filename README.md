@@ -1,5 +1,7 @@
 Project Video v2 Link(6 min video)- https://www.youtube.com/watch?v=k6U9cGeSQqc&t=232s
 Project Video v1 Link(2 min video)- https://youtu.be/lNojLJDH3_s?si=i5n3ZshROa8fIIah
+
+
 Samvadini is an assistive communication web application built under the ASEP2 initiative at VIT Pune for 2024–25, designed to help persons with disabilities bridge communication gaps using Machine Learning, Natural Language Processing, and modern web development.
 
 Samvadini is an accessibility assistant offering:
